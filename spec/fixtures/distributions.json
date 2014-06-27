@@ -1,0 +1,74 @@
+[
+  {
+    "streaming": false,
+    "id": "E2SO336F6AMQ08",
+    "status": "InProgress",
+    "lastModified": "2011-01-31T06:56:42.154Z",
+    "inProgressInvalidationBatches": 0,
+    "domainName": "d1ood20dgya2ll.cloudfront.net",
+    "config": {
+      "distribution": "E2SO336F6AMQ08",
+      "aliases": [
+        "static.liap.us"
+      ],
+      "comment": "Distribution for static.liap.us",
+      "enabled": true,
+      "origins": [
+        {
+          "id": "MyOrigin",
+          "domainName": "static.liap.us.s3.amazonaws.com",
+          "type": "s3",
+          "originAccessIdentity": ""
+        }
+      ],
+      "defaultCacheBehavior": {
+        "targetOriginId": "MyOrigin",
+        "forwardQueryString": false,
+        "trustedSigners": [
+
+        ],
+        "viewerProtocolPolicy": "allow-all",
+        "minTTL": "3600"
+      },
+      "cacheBehaviors": [
+
+      ]
+    }
+  },
+  {
+    "streaming": false,
+    "id": "E29XRZTZN1VOAV",
+    "status": "Deployed",
+    "lastModified": "2013-02-08T09:48:43.672Z",
+    "inProgressInvalidationBatches": 10,
+    "domainName": "d290rn73xc4vfg.cloudfront.net",
+    "config": {
+      "distribution": "E29XRZTZN1VOAV",
+      "aliases": [
+
+      ],
+      "comment": "",
+      "enabled": true,
+      "origins": [
+        {
+          "id": "MyOrigin",
+          "domainName": "sharephototest.s3.amazonaws.com",
+          "type": "s3",
+          "originAccessIdentity": ""
+        }
+      ],
+      "defaultCacheBehavior": {
+        "targetOriginId": "MyOrigin",
+        "forwardQueryString": false,
+        "trustedSigners": [
+
+        ],
+        "viewerProtocolPolicy": "allow-all",
+        "minTTL": "0"
+      },
+      "cacheBehaviors": [
+
+      ]
+    }
+  }
+]
