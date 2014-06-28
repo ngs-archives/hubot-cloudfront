@@ -47,7 +47,6 @@
     "sinon-chai": "^2.5.0"
   },
   "dependencies": {
-    "cloudfront": "^0.3.3",
-    "ascii-table": "0.0.4"
+    "cloudfront": "^0.3.3"
   }
 }

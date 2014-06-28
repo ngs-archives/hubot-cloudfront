@@ -38,7 +38,7 @@ describe 'hubot-cloudfront', ->
   afterEach ->
     robot.server.close()
     robot.shutdown()
-    robot.brain.remove('cloudfrontInvalidations')
+    robot.cloudfront.watcher.stop()
     process.removeAllListeners 'uncaughtException'
 
   describe 'help', ->
@@ -52,9 +52,9 @@ describe 'hubot-cloudfront', ->
         ## https://github.com/github/hubot/pull/712
         try
           expect(strings).to.deep.equal ["""
-          TestTestHubot cloudfront invalidate <distribution id> <path0> <path1> ... - Invalidates objects.
+          TestTestHubot cloudfront invalidate <distribution id or index> <path0> <path1> ... - Invalidates objects.
           TestTestHubot cloudfront list distributions - Lists distributions.
-          TestTestHubot cloudfront list invalidations <distribution id> - Lists invalidations.
+          TestTestHubot cloudfront list invalidations <distribution id or index> - Lists invalidations.
           TestTestHubot help - Displays all of the help commands that TestHubot knows about.
           TestTestHubot help <query> - Displays all help commands that match <query>.
           """]
@@ -64,9 +64,10 @@ describe 'hubot-cloudfront', ->
       adapter.receive new TextMessage user, 'TestHubot help'
 
   describe 'cloudfront', ->
-    it 'assigns cloudfront client to robot', ->
+    it 'assigns cloudfront client and watcher to robot', ->
       expect(robot.cloudfront.client).to.be.defined
-
+      expect(robot.cloudfront.watcher).to.be.defined
+      expect(robot.cloudfront.watcher.intervalId).not.to.be.null
     [
       'TestHubot  cloudfront   list   distributions  '
       'TestHubot  cf   ls   dist  '
@@ -82,13 +83,21 @@ describe 'hubot-cloudfront', ->
           expect(spy).to.have.been.calledOnce
           expect(spy.getCall(0).args[0]).not.to.be.null
           expect(spy.getCall(0).args[1]).to.deep.equal ["""
-          .-----------------------------------------------------------------------------.
-          |       ID       |   Status   |          Domain Name          | Invalidations |
-          |----------------|------------|-------------------------------|---------------|
-          | E2SO336F6AMQ08 | InProgress | d1ood20dgya2ll.cloudfront.net |             0 |
-          | E29XRZTZN1VOAV | Deployed   | d290rn73xc4vfg.cloudfront.net |            10 |
-          '-----------------------------------------------------------------------------'
+          - 0: E2SO336F6AMQ08 --------------------
+            domain: d1ood20dgya2ll.cloudfront.net
+            status: InProgress
+            comment: Distribution for static.liap.us
+
+          - 1: E29XRZTZN1VOAV --------------------
+            domain: d290rn73xc4vfg.cloudfront.net
+            status: Deployed
+            invalidations in progress: 10
+
           """]
+          expect(robot.brain.get('cloudfront.distributions')).to.deep.equal [
+            'E2SO336F6AMQ08'
+            'E29XRZTZN1VOAV'
+          ]
         it 'replies if empty', ->
           sinon.stub robot.cloudfront.client, 'listDistributions', (options, callback)->
             callback.call robot.cloudfront.client, null, [], {}
@@ -112,8 +121,18 @@ describe 'hubot-cloudfront', ->
       'TestHubot  cloudfront   list   invalidations   E2SO336F6AMQ08   '
       'TestHubot  cloudfront   list   invalidation   E2SO336F6AMQ08   '
       'TestHubot  cf  ls  inv  E2SO336F6AMQ08     '
+      'TestHubot  cloudfront   list   invalidate    0  '
+      'TestHubot  cloudfront   list   invalidations   0   '
+      'TestHubot  cloudfront   list   invalidation   0   '
+      'TestHubot  cf  ls  inv   0    '
     ].forEach (msg)->
       describe msg, ->
+        beforeEach ->
+          robot.brain.set 'cloudfront.distributions', [
+            'E2SO336F6AMQ08'
+            'E29XRZTZN1VOAV'
+          ]
+          robot.brain.save()
         it 'lists if exists', ->
           sinon.stub robot.cloudfront.client, 'listInvalidations', (id, callback)->
             fixture = loadFixture 'invalidations'
@@ -121,15 +140,13 @@ describe 'hubot-cloudfront', ->
           spy = sinon.spy()
           adapter.on 'send', spy
           adapter.receive new TextMessage user, msg
+          expect(robot.cloudfront.client.listInvalidations).to.have.been.calledOnce
+          expect(robot.cloudfront.client.listInvalidations.getCall(0).args[0]).to.equal 'E2SO336F6AMQ08'
           expect(spy).to.have.been.calledOnce
           expect(spy.getCall(0).args[0]).not.to.be.null
           expect(spy.getCall(0).args[1]).to.deep.equal ["""
-          .-----------------------------.
-          |       ID       |   Status   |
-          |----------------|------------|
-          | I14NJQR76VVQAT | InProgress |
-          | I3MAZE9OBGZ05X | Completed  |
-          '-----------------------------'
+          I14NJQR76VVQAT - InProgress
+          I3MAZE9OBGZ05X - Completed
           """]
         it 'replies if empty', ->
           sinon.stub robot.cloudfront.client, 'listInvalidations', (id, callback)->
@@ -170,9 +187,10 @@ describe 'hubot-cloudfront', ->
           Invalidation I14NJQR76VVQAT on distribution E2SO336F6AMQ08 created.
           It might take 10 to 15 minutes until all files are invalidated.
           """]
-          expect(robot.brain.get('cloudfrontInvalidations')).to.deep.equal [
+          expect(robot.brain.get('cloudfront.invalidations')).to.deep.equal [
             id: 'I14NJQR76VVQAT'
             distribution: 'E2SO336F6AMQ08'
+            room: '#mocha'
             userId: '1'
           ]
         it 'replies if it has an error', ->
@@ -189,9 +207,10 @@ describe 'hubot-cloudfront', ->
       spy = null
       beforeEach ->
         spy = sinon.spy()
-        robot.brain.set 'cloudfrontInvalidations', [
+        robot.brain.set 'cloudfront.invalidations', [
           id: 'I14NJQR76VVQAT'
           distribution: 'E2SO336F6AMQ08'
+          room: '#mocha'
           userId: '1'
         ]
         robot.brain.save()
@@ -220,6 +239,6 @@ describe 'hubot-cloudfront', ->
           robot.cloudfront.watcher.checkStatus()
           expect(spy).to.have.been.calledOnce
           expect(spy.getCall(0).args[0]).not.to.be.null
-          expect(spy.getCall(0).args[0]).to.deep.equal id: '1', name: 'ngs', room: '#mocha'
+          expect(spy.getCall(0).args[0]).to.deep.equal user: { id: '1', name: 'ngs', room: '#mocha' }, room: '#mocha'
           expect(spy.getCall(0).args[1]).to.deep.equal ["Invalidation I14NJQR76VVQAT on distribution E2SO336F6AMQ08 completed."]
-          expect(robot.brain.get('cloudfrontInvalidations')).to.deep.equal []
+          expect(robot.brain.get('cloudfront.invalidations')).to.deep.equal []

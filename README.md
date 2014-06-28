@@ -8,20 +8,21 @@ A [Hubot] script to list and invalidate [Amazon CloudFront] distributions.
 
 ```
 me > hubot cloudfront list distributions
-hubot > .-----------------------------------------------------------------------------.
-        |       ID       |   Status   |          Domain Name          | Invalidations |
-        |----------------|------------|-------------------------------|---------------|
-        | E2SO336F6AMQ08 | InProgress | d1ood20dgya2ll.cloudfront.net |             0 |
-        | E29XRZTZN1VOAV | Deployed   | d290rn73xc4vfg.cloudfront.net |            10 |
-        '-----------------------------------------------------------------------------'
-me > hubot cloudfront list invalidates E29XRZTZN1VOAV
-hubot > .-----------------------------.
-        |       ID       |   Status   |
-        |----------------|------------|
-        | I14NJQR76VVQAT | InProgress |
-        | I3MAZE9OBGZ05X | Completed  |
-        '-----------------------------'
-me > hubot cloudfront invalidate E29XRZTZN1VOAV /index.html /atom.xml /images/*.png
+hubot > - 0: E2SO336F6AMQ08 --------------------
+          domain: d1ood20dgya2ll.cloudfront.net
+          status: InProgress
+          comment: Distribution for static.liap.us
+
+        - 1: E29XRZTZN1VOAV --------------------
+          domain: d290rn73xc4vfg.cloudfront.net
+          status: Deployed
+          invalidation batches in progress: 10
+
+me > hubot cloudfront list invalidates 1
+hubot > I14NJQR76VVQAT - InProgress
+        I3MAZE9OBGZ05X - Completed
+
+me > hubot cloudfront invalidate 1 /index.html /atom.xml /images/*.png
 hubot > Invalidation I14NJQR76VVQAT on distribution E29XRZTZN1VOAV created.
         It might take 10 to 15 minutes until all files are invalidated.
 ```
@@ -31,8 +32,8 @@ Commands
 
 ```
 hubot cloudfront list distributions
-hubot cloudfront list invalidations <distribution id>
-hubot cloudfront invalidate <distribution id> <path0> <path1> ...
+hubot cloudfront list invalidations <distribution id or index>
+hubot cloudfront invalidate <distribution id or index> <path0> <path1> ...
 ```
 
 Installation
