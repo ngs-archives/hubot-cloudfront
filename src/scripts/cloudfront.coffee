@@ -56,6 +56,11 @@ class Watcher
 
 module.exports = (robot) ->
   { HUBOT_AWS_ACCESS_KEY_ID, HUBOT_AWS_SECRET_ACCESS_KEY } = process.env
+  if !HUBOT_AWS_ACCESS_KEY_ID or !HUBOT_AWS_ACCESS_KEY_ID
+    return robot.logger.error """
+      hubot-cloudfront is not loaded due to missing configuration.
+      both HUBOT_AWS_ACCESS_KEY_ID and HUBOT_AWS_ACCESS_KEY_ID are required.
+    """
   client = cloudfront.createClient HUBOT_AWS_ACCESS_KEY_ID, HUBOT_AWS_SECRET_ACCESS_KEY
   watcher = new Watcher robot, client
   robot.cloudfront = { client, watcher }
