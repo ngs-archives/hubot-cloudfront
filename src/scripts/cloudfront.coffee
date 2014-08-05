@@ -6,7 +6,7 @@
 #   HUBOT_AWS_SECRET_ACCESS_KEY
 #
 # Commands:
-#   hubot cloudfront list distributions - Lists distributions.
+#   hubot cloudfront list distributions (<query>) - Lists distributions.
 #   hubot cloudfront list invalidations <distribution id or index> - Lists invalidations.
 #   hubot cloudfront invalidate <distribution id or index> <path0> <path1> ... - Invalidates objects.
 
@@ -65,30 +65,41 @@ module.exports = (robot) ->
   watcher = new Watcher robot, client
   robot.cloudfront = { client, watcher }
 
-  robot.respond /\s*(?:cloudfront|cf)\s+(?:list|ls)\s+dist(?:ributions?)?\s*$/i, (msg) ->
+  robot.respond /\s*(?:cloudfront|cf)\s+(?:list|ls)\s+dist(?:ributions?)?(?:\s+(.+))?\s*$/i, (msg) ->
+    query = (msg.match[1]||'').trim()
     client.listDistributions { streaming: no }, (err, list, info)->
       if err?
         msg.reply err.toString()
         return
-      unless list?.length > 0
-        msg.reply "No distributions found."
-        return
       res = []
       distIds = []
+      list = [] unless list instanceof Array
       list.forEach ({ id, status, domainName, inProgressInvalidationBatches, config }, i)->
-        res.push """
-                 - #{i}: #{id} --------------------
-                   domain: #{domainName}
-                   status: #{status}
-                 """
-        if inProgressInvalidationBatches > 0
-          res.push "  invalidations in progress: #{inProgressInvalidationBatches}"
-        res.push "  comment: #{comment}" if comment = config?.comment
-        res.push ""
+        { comment } = config
+        if query
+          found = no
+          for val in [id, status, domainName, comment]
+            found ||= typeof val is 'string' and val.toLowerCase().indexOf(query) != -1
+        else
+          found = yes
+        if found
+          res.push """
+                   - #{i}: #{id} --------------------
+                     domain: #{domainName}
+                     status: #{status}
+                   """
+          if inProgressInvalidationBatches > 0
+            res.push "  invalidations in progress: #{inProgressInvalidationBatches}"
+          res.push "  comment: #{comment}" if comment
+          res.push ""
         distIds.push id
       robot.brain.set BRAIN_KEY_DISTRIBUTIONS, distIds
       robot.brain.save()
-      msg.send res.join '\n'
+      text = res.join('\n').trim()
+      if text.length > 0
+        msg.send text
+      else
+        msg.reply "No distributions found."
 
   robot.respond /\s*(?:cloudfront|cf)\s+(?:list|ls)\s+inv(?:alidat(?:e|ions?)|)\s+([a-z0-9]+)\s*$/i, (msg) ->
     id = msg.match[1]

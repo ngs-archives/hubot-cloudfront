@@ -73,11 +73,11 @@ describe 'hubot-cloudfront', ->
           ## https://github.com/github/hubot/pull/712
           try
             expect(strings).to.deep.equal ["""
-            TestTestHubot cloudfront invalidate <distribution id or index> <path0> <path1> ... - Invalidates objects.
-            TestTestHubot cloudfront list distributions - Lists distributions.
-            TestTestHubot cloudfront list invalidations <distribution id or index> - Lists invalidations.
-            TestTestHubot help - Displays all of the help commands that TestHubot knows about.
-            TestTestHubot help <query> - Displays all help commands that match <query>.
+            TestHubot cloudfront invalidate <distribution id or index> <path0> <path1> ... - Invalidates objects.
+            TestHubot cloudfront list distributions (<query>) - Lists distributions.
+            TestHubot cloudfront list invalidations <distribution id or index> - Lists invalidations.
+            TestHubot help - Displays all of the help commands that TestHubot knows about.
+            TestHubot help <query> - Displays all help commands that match <query>.
             """]
             do done
           catch e
@@ -89,6 +89,54 @@ describe 'hubot-cloudfront', ->
         expect(robot.cloudfront.client).to.be.defined
         expect(robot.cloudfront.watcher).to.be.defined
         expect(robot.cloudfront.watcher.intervalId).not.to.be.null
+
+      [
+        'TestHubot  cloudfront   list   distributions  us  '
+        'TestHubot  cf   ls   dist  us  '
+      ].forEach (msg)->
+        describe msg, ->
+          it 'lists if exists', ->
+            sinon.stub robot.cloudfront.client, 'listDistributions', (options, callback)->
+              fixture = loadFixture 'distributions'
+              callback.call robot.cloudfront.client, null, fixture, {}
+            spy = sinon.spy()
+            adapter.on 'send', spy
+            adapter.receive new TextMessage user, msg
+            expect(spy).to.have.been.calledOnce
+            expect(spy.getCall(0).args[0]).not.to.be.null
+            expect(spy.getCall(0).args[1]).to.deep.equal ["""
+            - 0: E2SO336F6AMQ08 --------------------
+              domain: d1ood20dgya2ll.cloudfront.net
+              status: InProgress
+              comment: Distribution for static.liap.us
+            """]
+            expect(robot.brain.get('cloudfront.distributions')).to.deep.equal [
+              'E2SO336F6AMQ08'
+              'E29XRZTZN1VOAV'
+            ]
+          it 'replies if empty', ->
+            sinon.stub robot.cloudfront.client, 'listDistributions', (options, callback)->
+              callback.call robot.cloudfront.client, null, [], {}
+            spy = sinon.spy()
+            adapter.on 'reply', spy
+            adapter.receive new TextMessage user, msg
+            expect(spy).to.have.been.calledOnce
+            expect(spy.getCall(0).args[0]).not.to.be.null
+            expect(spy.getCall(0).args[1]).to.deep.equal ['No distributions found.']
+      [
+        'TestHubot  cloudfront   list   distributions  foo  '
+        'TestHubot  cf   ls   dist  foo  '
+      ].forEach (msg)->
+        describe msg, ->
+          it 'replies if query not match', ->
+            sinon.stub robot.cloudfront.client, 'listDistributions', (options, callback)->
+              callback.call robot.cloudfront.client, null, [], {}
+            spy = sinon.spy()
+            adapter.on 'reply', spy
+            adapter.receive new TextMessage user, msg
+            expect(spy).to.have.been.calledOnce
+            expect(spy.getCall(0).args[0]).not.to.be.null
+            expect(spy.getCall(0).args[1]).to.deep.equal ['No distributions found.']
       [
         'TestHubot  cloudfront   list   distributions  '
         'TestHubot  cf   ls   dist  '
@@ -113,7 +161,6 @@ describe 'hubot-cloudfront', ->
               domain: d290rn73xc4vfg.cloudfront.net
               status: Deployed
               invalidations in progress: 10
-
             """]
             expect(robot.brain.get('cloudfront.distributions')).to.deep.equal [
               'E2SO336F6AMQ08'
