@@ -31,7 +31,7 @@ Commands
 --------
 
 ```
-hubot cloudfront list distributions
+hubot cloudfront list distributions (<query>)
 hubot cloudfront list invalidations <distribution id or index>
 hubot cloudfront invalidate <distribution id or index> <path0> <path1> ...
 ```
