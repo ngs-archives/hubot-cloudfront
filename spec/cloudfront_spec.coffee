@@ -73,11 +73,11 @@ describe 'hubot-cloudfront', ->
           ## https://github.com/github/hubot/pull/712
           try
             expect(strings).to.deep.equal ["""
-            TestTestHubot cloudfront invalidate <distribution id or index> <path0> <path1> ... - Invalidates objects.
-            TestTestHubot cloudfront list distributions (<query>) - Lists distributions.
-            TestTestHubot cloudfront list invalidations <distribution id or index> - Lists invalidations.
-            TestTestHubot help - Displays all of the help commands that TestHubot knows about.
-            TestTestHubot help <query> - Displays all help commands that match <query>.
+            TestHubot cloudfront invalidate <distribution id or index> <path0> <path1> ... - Invalidates objects.
+            TestHubot cloudfront list distributions (<query>) - Lists distributions.
+            TestHubot cloudfront list invalidations <distribution id or index> - Lists invalidations.
+            TestHubot help - Displays all of the help commands that TestHubot knows about.
+            TestHubot help <query> - Displays all help commands that match <query>.
             """]
             do done
           catch e
